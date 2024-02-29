@@ -2,41 +2,49 @@ import 'package:isar/isar.dart';
 import 'package:minmal_note_app/feture/data/model/noteModel.dart';
 import 'package:path_provider/path_provider.dart';
 
-class NoteDataBase {
+abstract class NoteDataBaseIsarRepoistory {
+  Future<void> initialize();
+  Future<void> addNote(String textFromUser);
+  Future<List<NoteModel>> fetchNote();
+  Future<void> updateNote({int? id, String? newText});
+  Future<void> deleteNote(int id);
+}
+
+class NoteDataBaseIsarRepoistoryImp extends NoteDataBaseIsarRepoistory {
   static late Isar isar;
   // Initialize Isar DataBase
-  static Future<void> initialize() async {
+  @override
+  Future<void> initialize() async {
     final dir = await getApplicationDocumentsDirectory();
     isar = await Isar.open([NoteModelSchema], directory: dir.path);
   }
 
   // Create A Note and save to db
-  static Future<void> addNote(String textFromUser) async {
-    // create A new note object
-
+  @override
+  Future<void> addNote(String textFromUser) async {
     final newNote = NoteModel()..text = textFromUser;
-
-    // Save to db
     await isar.writeTxn(() => isar.noteModels.put(newNote));
-
-    await fetchNote();
   }
 
-  static Future<List<NoteModel>> fetchNote() async {
-    return isar.noteModels.where().findAll();
+  // get Data from db
+  @override
+  Future<List<NoteModel>> fetchNote() async {
+    return await isar.noteModels.where().findAll();
   }
 
-  static Future<void> updateNote({int? id, String? newText}) async {
+// Update Data from db
+  @override
+  Future<void> updateNote({int? id, String? newText}) async {
     final existingNote = await isar.noteModels.get(id!);
     if (existingNote != null) {
       existingNote.text = newText!;
       await isar.writeTxn(() => isar.noteModels.put(existingNote));
-      await fetchNote();
     }
   }
 
-  static Future<void> deleteNote(int id) async {
+// Delete Data from db
+  @override
+  Future<void> deleteNote(int id) async {
     await isar.writeTxn(() => isar.noteModels.delete(id));
-    await fetchNote();
   }
 }
